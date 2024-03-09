@@ -1,0 +1,20 @@
+# Binaries
+foray
+
+# Build
+*.out
+*.[aod]
+*.cor
+
+## Logs
+build.log
+compile_commands.json
+
+.cache
+.fast
+
+# Coverage
+*.gc??
+
+# Python (CI)
+*.pyc
