@@ -1,5 +1,6 @@
 # Binaries
 foray
+libforay.so
 
 # Build
 *.out

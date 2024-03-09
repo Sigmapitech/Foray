@@ -1,7 +1,7 @@
 .POSIX:
 .SUFFIXES: .d
 
-CC := gcc
+CC := cc
 
 CFLAGS := -std=gnu11
 CFLAGS += -iquote forary
@@ -30,7 +30,6 @@ CFLAGS += -Winit-self
 CFLAGS += -Winline
 CFLAGS += -Wlogical-op
 CFLAGS += -Wmissing-prototypes
-CFLAGS += -Wredundant-decls
 CFLAGS += -Wshadow
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -Wsuggest-attribute=pure
@@ -83,26 +82,38 @@ else
 endif
 
 BUILD_DIR := .build
-OUT := foray
 
-LDFLAGS := -fwhole-program -flto
+OUT := foray
+LIB := libforay.so
 
 VPATH += src
-SRC := main.c
+SRC_BIN := main.c
+
+VPATH += src
+SRC_LIB := wrap_malloc.c
 
 vpath %.c $(VPATH)
 
-OBJ := $(SRC:%.c=$(BUILD_DIR)/%.o)
+OBJ_BIN := $(SRC_BIN:%.c=$(BUILD_DIR)/%.o)
+OBJ_LIB := $(SRC_LIB:%.c=$(BUILD_DIR)/%.o)
+
 DEP := $(OBJ:.o=.d)
+
+.PHONY: all
+all: $(OUT) $(LIB)
 
 -include $(DEP)
 
-.PHONY: all
-all: $(OUT)
-
-$(OUT): $(OBJ)
+$(LIB): CFLAGS += -fPIC -shared -z initfirst
+$(LIB): $(OBJ_LIB)
 	@ mkdir -p $(dir $@)
-	$Q $(CC) -o $@ $(OBJ) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
+	$Q $(CC) -o $@ $(OBJ_LIB) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
+	@ $(LOG_TIME) "LD $(C_GREEN) $@ $(C_RESET)"
+
+$(OUT): LDFLAGS := -fwhole-program -flto
+$(OUT): $(OBJ_BIN)
+	@ mkdir -p $(dir $@)
+	$Q $(CC) -o $@ $(OBJ_BIN) $(CFLAGS) $(LDLIBS) $(LDFLAGS)
 	@ $(LOG_TIME) "LD $(C_GREEN) $@ $(C_RESET)"
 
 $(BUILD_DIR)/%.o: %.c
@@ -112,12 +123,12 @@ $(BUILD_DIR)/%.o: %.c
 
 .PHONY: clean
 clean:
-	$(RM) $(OBJ)
+	$(RM) $(OBJ_BIN) $(OBJ_LIB)
 	@ $(LOG_TIME) $@
 
 .PHONY: fclean
 fclean: clean
-	$(RM) -r $(BUILD_DIR) $(OUT) $(OUT_DEBUG)
+	$(RM) -r $(BUILD_DIR) $(OUT) $(LIB)
 	@ $(LOG_TIME) $@
 
 .PHONY: re
