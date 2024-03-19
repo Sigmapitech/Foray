@@ -25,21 +25,41 @@
             base ++ debug ++ testing;
         };
 
-        packages =
-          let
-            buildCBinary = name: epiflake.lib.BuildEpitechCBinary
-              pkgs
-              {
-                inherit name;
+        packages = rec {
+            default = foray;
+            foray = pkgs.stdenv.mkDerivation {
+                name = "foray";
                 src = ./.;
+                V = 1;
 
                 enableParallelBuilding = true;
-                V = 1;
-              };
-          in
-          rec {
-            default = foray;
-            foray = (buildCBinary "foray");
+                nativeBuildInputs = [ pkgs.makeWrapper ];
+
+                buildPhase = ''
+                  runHook preBuild
+
+                  ${pkgs.gnumake}/bin/make
+
+                  runHook postBuild
+                '';
+
+                installPhase = ''
+                  runHook preBuild
+
+                  mkdir -p $out/bin
+                  cp foray $out/bin/foray
+
+                  mkdir -p $out/lib
+                  cp libforay.so $out/lib/libforay.so
+
+                  runHook postBuild
+                '';
+
+                postFixup = ''
+                  wrapProgram $out/bin/foray \
+                    --set LD_LIBRARY_PATH "LD_LIBRARY_PATH:$out/lib"
+                '';
+            };
           };
       });
 }
